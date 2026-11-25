@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="theme-color" content="#142639" />
+    <meta
+      name="description"
+      content="Dashboard peminjaman aset ruang kerja dan riwayat pengembalian melalui kode QR."
+    />
+    <title>PinjamBalik · Peminjaman aset</title>
+    <meta name="application-name" content="PinjamBalik" />
+    <link rel="icon" href="./pinjambalik.svg" type="image/svg+xml" />
+    <link rel="preload" href="./dm-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./interface.css" />
+    <link rel="stylesheet" href="./dashboard.css" />
+    <script src="./qrcode.js" defer></script>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#page" data-skip>Langsung ke isi</a>
+    <div id="shell"></div>
+    <dialog id="modal" aria-labelledby="dialog-title"><div id="dialog-content"></div></dialog>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <div id="printSheet" aria-hidden="true"></div>
+    <noscript>Aktifkan JavaScript pada peramban untuk membuka PinjamBalik.</noscript>
+  </body>
+</html>
