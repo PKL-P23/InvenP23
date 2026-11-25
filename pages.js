@@ -93,10 +93,17 @@ function inventoryCategory(asset) {
   }
 }
 
+function categoryButtons(section, selected) {
+  const buttons = inventoryCategories.map(([value, name]) => {
+    const active = value === selected;
+    return `<button type="button" class="btn${active ? ' primary' : ''}" data-category="${value}" data-section="${section}" aria-pressed="${active}">${name}</button>`;
+  });
+  return `<div class="tools-row" role="group" aria-label="Kelompok aset">${buttons.join('')}</div>`;
+}
+
 function inventoryPanel(c) {
   const key = 'inventory',
-    f = c.filters[key],
-    limit = 12;
+    f = c.filters[key];
   const units = c.data.assets.filter(a => !a.archived);
   const category = f.category || 'all';
   const grouped = category === 'all' ? units : units.filter(a => inventoryCategory(a) === category);
@@ -111,13 +118,16 @@ function inventoryPanel(c) {
       isMatch(f.q, [a.name, a.code, a.location, a.category, c.active.get(a.code)?.original_borrower, c.active.get(a.code)?.borrower]) &&
       (f.status === 'all' || f.status === stage(a)),
   );
+  const size = f.pageSize || '50';
+  const limit = size === 'all' ? Math.max(1, rows.length) : Number(size);
   f.page = Math.min(f.page, Math.max(1, Math.ceil(rows.length / limit)));
   const items = rows.slice((f.page - 1) * limit, f.page * limit);
   const options = [['all', 'Semua', grouped.length], ['available', 'Tersedia', counts.available], ['borrowed', 'Dipinjam', counts.borrowed]];
   const tabs = `<div class="status-tabs" role="group" aria-label="Filter status aset">${options.map(([value, label, count]) => `<button type="button" data-unit-status="${value}" data-section="${key}" aria-pressed="${f.status === value}">${label}<span>${total(count)}</span></button>`).join('')}</div>`;
   return `<section class="panel inventory"><div class="panel-head"><div class="head-pair"><h2>Unit terdaftar</h2></div><small>${countText(units.length, 'unit')}</small></div>
+    ${categoryButtons(key, category)}
     <div class="inventory-controls">${tabs}
-      <label class="filterbox">${icon('filter', 15)}<select id="inventory-category" data-filter="${key}" aria-label="Kelompok aset">${statuses(category, inventoryCategories)}</select></label>
+      <label class="filterbox">${icon('box', 15)}<select id="inventory-size" aria-label="Jumlah aset per halaman">${statuses(size, [['50','50 aset per halaman'], ['100','100 aset per halaman'], ['all','Semua aset']])}</select></label>
       ${searchBox(key, f.q, 'Cari aset atau peminjam')}</div>
     <div data-filter-results="${key}">${
       items.length
@@ -212,19 +222,28 @@ export function qrImage(c, code) {
 export function paperLabel(c, a) {
   return `<article class="paper-label"><div class="qr-stack"><div class="qrcode" role="img" aria-label="Kode QR ${esc(a.code)}">${qrImage(c, a.code)}</div><strong class="print-code">${esc(a.code)}</strong></div><div><div class="print-brand">PinjamBalik</div><strong>${esc(a.name)}</strong><small>${esc(a.location)}</small></div></article>`;
 }
+export function matchingLabelAssets(c) {
+  const { category, q } = c.filters.labels;
+  return c.data.assets.filter(a => !a.archived &&
+    (!category || category === 'all' || inventoryCategory(a) === category) &&
+    isMatch(q, [a.name, a.code, a.location]));
+}
+
 export function labels(c) {
   const f = c.filters.labels;
-  const units = c.data.assets.filter(
-    (a) => !a.archived && isMatch(f.q, [a.name, a.code, a.location]),
-  );
+  const units = matchingLabelAssets(c);
   const size = 12;
   f.page = Math.min(f.page, Math.max(1, Math.ceil(units.length / size)));
   const visible = units.slice((f.page - 1) * size, f.page * size);
-  const pack = new URL(c.session.baseUrl || location.origin).origin === serviceOrigin
+  const unfiltered = (!f.category || f.category === 'all') && !f.q.trim();
+  const pack = unfiltered && new URL(c.session.baseUrl || location.origin).origin === serviceOrigin
     ? '<a class="btn" href="https://rakruang-qr.geksonsimanjuntak00.chatgpt.site/label-inventaris.pdf" download>Unduh 695 label awal (PDF)</a>' : '';
   return pageTitle('Label QR', 'Tempel satu label pada tiap unit. Kamera ponsel akan membuka halaman barang tersebut.',
-    `<div class="admin-page-actions">${pack}${button('print-all', 'Cetak halaman ini', 'printer', 'btn primary')}</div>`) +
+    `<div class="admin-page-actions" data-label-actions="labels">${pack}
+      ${units.length > size ? button('print-page', 'Cetak halaman ini', 'printer') : ''}
+      <button type="button" class="btn primary" data-action="print-all"${units.length ? '' : ' disabled'}>${icon('printer',17)}Cetak ${countText(units.length, 'label')}</button></div>`) +
     `<section class="panel"><div class="panel-head"><div class="head-pair"><span class="title-icon">${icon('qr', 19)}</span><h2>Label per unit</h2></div><small data-result-count="labels">${countText(units.length, 'label')}</small></div>
+    ${categoryButtons('labels', f.category || 'all')}
     <div class="tools-row">${searchBox('labels', f.q, 'Cari kode atau nama aset…')}</div><div data-filter-results="labels"><div class="labels-grid">
       ${visible.length ? visible.map(a => `<div class="label-card">${paperLabel(c, a)}<div>${link(assetPath(a.code), 'Buka aset')}<button class="text-link" data-save-qr="${esc(a.code)}">${icon('download', 15)}Simpan</button><button class="text-link" data-print="${esc(a.code)}">${icon('printer', 15)}Cetak</button></div></div>`).join('') : empty('Label tidak ditemukan')}
     </div>${pager(units.length, f.page, size, 'labels')}</div></section>`;

@@ -7,11 +7,12 @@ import {
   inventory,
   historyPage,
   labels,
+  matchingLabelAssets,
   assetDetail,
   adminPage,
   paperLabel,
   assetUrl,
-} from './pages.js?v=inventory-2';
+} from './pages.js?v=labels-3';
 import { transactionForm, transactionScanner } from './transaction.js';
 
 const $ = (s) => document.querySelector(s),
@@ -21,7 +22,7 @@ const c = {
   data: null,
   etag: null,
   session: { admin: null, baseUrl: serviceOrigin },
-  filters: { approvals: { page: 1 }, inventory: { ...filter(), category: 'all' }, history: filter(), labels: filter() },
+  filters: { approvals: { page: 1 }, inventory: { ...filter(), category: 'all', pageSize: '50' }, history: filter(), labels: { ...filter(), category: 'all' } },
   byCode: new Map(),
   active: new Map(),
   audit: [],
@@ -464,6 +465,7 @@ function printLabels(codes) {
   $('#printSheet').innerHTML = units.map((a) => paperLabel(c, a)).join('');
   window.print();
 }
+window.addEventListener('afterprint', () => $('#printSheet').replaceChildren());
 async function saveQr(code) {
   const a = c.byCode.get(code);
   if (!a) return;
@@ -584,12 +586,14 @@ document.addEventListener('click', async (e) => {
     try { await saveQr(d.saveQr); } catch (err) { toast(err.message); }
     return;
   }
-  if (d.unitStatus) {
+  if (d.category || d.unitStatus) {
     const f = c.filters[d.section];
-    f.status = d.unitStatus;
+    if (d.category) f.category = d.category;
+    else f.status = d.unitStatus;
     f.page = 1;
     render(false);
-    page.querySelector('[data-unit-status="' + d.unitStatus + '"]')?.focus({ preventScroll: true });
+    const selector = d.category ? '[data-category="' + d.category + '"]' : '[data-unit-status="' + d.unitStatus + '"]';
+    page.querySelector(selector)?.focus({ preventScroll: true });
     return;
   }
   if (d.page) {
@@ -652,7 +656,10 @@ document.addEventListener('click', async (e) => {
     case 'add':
       adminDialog('add');
       break;
-    case 'print-all': {
+    case 'print-all':
+      printLabels(matchingLabelAssets(c).map(a => a.code));
+      break;
+    case 'print-page': {
       printLabels(Array.from(page.querySelectorAll('.label-card [data-print]'), el => el.dataset.print));
       break;
     }
@@ -667,7 +674,7 @@ document.addEventListener('input', (e) => {
     const views = { inventory, history: historyPage, labels };
     const draft = document.createElement('template');
     draft.innerHTML = views[k](c);
-    for (const marker of ['data-filter-results', 'data-result-count']) {
+    for (const marker of ['data-filter-results', 'data-result-count', 'data-label-actions']) {
       const selector = '[' + marker + '="' + k + '"]';
       const next = draft.content.querySelector(selector), live = page.querySelector(selector);
       if (next && live) live.replaceChildren(...next.childNodes);
@@ -676,10 +683,15 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   const el = e.target;
+  if (el.id === 'inventory-size') {
+    c.filters.inventory.pageSize = el.value;
+    c.filters.inventory.page = 1;
+    render();
+    return;
+  }
   if (el.dataset.filter) {
     const f = c.filters[el.dataset.filter];
-    if (el.id === 'inventory-category') f.category = el.value;
-    else f.status = el.value;
+    f.status = el.value;
     f.page = 1;
     render();
     return;
