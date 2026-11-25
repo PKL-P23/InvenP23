@@ -21,7 +21,7 @@ const c = {
   data: null,
   etag: null,
   session: { admin: null, baseUrl: serviceOrigin },
-  filters: { approvals: { page: 1 }, inventory: filter(), history: filter(), labels: filter() },
+  filters: { approvals: { page: 1 }, inventory: { ...filter(), category: 'all' }, history: filter(), labels: filter() },
   byCode: new Map(),
   active: new Map(),
   audit: [],
@@ -678,7 +678,8 @@ document.addEventListener('change', (e) => {
   const el = e.target;
   if (el.dataset.filter) {
     const f = c.filters[el.dataset.filter];
-    f.status = el.value;
+    if (el.id === 'inventory-category') f.category = el.value;
+    else f.status = el.value;
     f.page = 1;
     render();
     return;
