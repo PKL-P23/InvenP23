@@ -23,7 +23,9 @@ export function readUnit(input, base) {
   } catch {
     throw new Error('QR ini tidak memuat kode unit PinjamBalik.');
   }
-  if (url.origin === 'https://gekson0101.github.io' && url.pathname === '/InvenP23/' && !url.username && !url.password) {
+  // Printed labels from either Pages address identify a unit; only the code is used.
+  const pagesLabel = ['https://pkl-p23.github.io', 'https://gekson0101.github.io'].includes(url.origin);
+  if (pagesLabel && url.pathname === '/InvenP23/' && !url.username && !url.password) {
     const unit = /^#\/aset\/([a-z0-9-]{1,24})$/i.exec(url.hash);
     if (unit) return unit[1].toUpperCase();
   }
