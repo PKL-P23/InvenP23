@@ -2,7 +2,7 @@
 
 [Buka dashboard peminjaman](https://gekson0101.github.io/InvenP23/).
 
-GitHub Pages menyajikan dashboard, inventaris, label QR, dan formulir peminjaman serta pengembalian. Siapa saja yang membuka dashboard dapat melihat riwayat. Petugas piket memindai label aset, mengisi formulir, lalu memasukkan kode akses pribadi untuk mencatat peminjaman atau pengembalian.
+InvenP23 menyajikan dashboard, inventaris, label QR, dan formulir peminjaman serta pengembalian. Siapa saja yang membuka dashboard dapat melihat riwayat. Petugas piket memindai label aset, mengisi formulir, lalu memasukkan kode akses pribadi untuk mencatat peminjaman atau pengembalian.
 
 ## Hosting dan data
 
