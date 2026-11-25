@@ -160,6 +160,7 @@ main { max-width: 1560px; margin-inline: auto; padding: 29px var(--gutter) var(-
 .searchbox,.filterbox,.history-filter-fields > label { display:flex; align-items:center; min-height:39px; border:1px solid #d5dfe6; border-radius:8px; background:#fff; color:#596e80; }
 .searchbox { gap:8px; padding:0 11px; min-width:0; flex:1 1 145px; }
 .inventory-controls .searchbox { max-width:300px; }
+.inventory-controls .filterbox select { flex:1; min-width:0; }
 .searchbox input { width:100%; color:var(--ink); min-width:0; appearance:none; border:0; background:transparent; padding:8px 0; font-size:.88rem; }
 .searchbox input:focus,.filterbox select:focus { outline:none; }
 .searchbox:focus-within,.filterbox:focus-within { border-color:#6993b2; box-shadow:0 0 0 2px #dcebf3; }
@@ -526,7 +527,7 @@ body:has(#modal[open]) { overflow:hidden; }
   .history-table .log-start { grid-area:3/1; }
   .history-table .log-end { grid-area:3/2; }
   .asset-table .badge { white-space:normal; max-width:116px; }
-  .status-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-self:stretch; width:100%; }
+  .status-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-self:stretch; width:100%; }
   .status-tabs button { flex-direction:column; gap:2px; padding-inline:2px; font-size:.8rem; }
   .loan-panel .asset-heading { margin-bottom:3px; }
   .admin-page-actions { gap:6px; }
