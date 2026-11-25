@@ -77,31 +77,53 @@ export function shell() {
     <nav class="mobile-nav" aria-label="Navigasi bawah"><a data-nav class="nav-item" href="${pageHref('/')}">${icon('history')}Riwayat</a><a data-nav class="nav-item" href="${pageHref('/inventaris')}">${icon('box')}Aset</a><a data-nav class="nav-item" href="${pageHref('/label')}">${icon('qr')}Label QR</a><a data-nav class="nav-item" href="${pageHref('/pengelola')}">${icon('shield')}Pengelola</a></nav></div>`;
 }
 
+const inventoryCategories = [
+  ['all', 'Semua kelompok'], ['audio', 'Perangkat audio/video'], ['network', 'Jaringan'],
+  ['office', 'ATK'], ['other', 'Lainnya'],
+];
+
+function inventoryCategory(asset) {
+  switch (asset.category?.trim().toUpperCase()) {
+    case 'AUDIO VIDEO': return 'audio';
+    case 'JARINGAN': return 'network';
+    case 'ATK': return 'office';
+    // These imported types are label tape, cutter refills, and a label printer.
+    case 'LAIN LAIN': return /^PB-(050|051|094)-\d{3}$/.test(asset.code) ? 'office' : 'other';
+    default: return 'other';
+  }
+}
+
 function inventoryPanel(c) {
   const key = 'inventory',
     f = c.filters[key],
     limit = 12;
   const units = c.data.assets.filter(a => !a.archived);
-  const group = a => { const stage = loanStage(c.active.get(a.code)); return ['requested', 'return_requested'].includes(stage) ? 'pending' : stage; };
-  const counts = {pending:0, borrowed:0, available:0};
-  for (const a of units) counts[group(a)]++;
-  const rows = units.filter(
+  const category = f.category || 'all';
+  const grouped = category === 'all' ? units : units.filter(a => inventoryCategory(a) === category);
+  const stage = a => loanStage(c.active.get(a.code));
+  const counts = { available: 0, borrowed: 0 };
+  for (const a of grouped) {
+    const status = stage(a);
+    if (Object.hasOwn(counts, status)) counts[status]++;
+  }
+  const rows = grouped.filter(
     (a) =>
-      !a.archived &&
       isMatch(f.q, [a.name, a.code, a.location, a.category, c.active.get(a.code)?.original_borrower, c.active.get(a.code)?.borrower]) &&
-      (f.status === 'all' || f.status === group(a)),
+      (f.status === 'all' || f.status === stage(a)),
   );
   f.page = Math.min(f.page, Math.max(1, Math.ceil(rows.length / limit)));
   const items = rows.slice((f.page - 1) * limit, f.page * limit);
-  const options = [['all', 'Semua', units.length], ['available', 'Tersedia', counts.available], ['borrowed', 'Dipinjam', counts.borrowed], ['pending', 'Pengajuan', counts.pending]];
+  const options = [['all', 'Semua', grouped.length], ['available', 'Tersedia', counts.available], ['borrowed', 'Dipinjam', counts.borrowed]];
   const tabs = `<div class="status-tabs" role="group" aria-label="Filter status aset">${options.map(([value, label, count]) => `<button type="button" data-unit-status="${value}" data-section="${key}" aria-pressed="${f.status === value}">${label}<span>${total(count)}</span></button>`).join('')}</div>`;
   return `<section class="panel inventory"><div class="panel-head"><div class="head-pair"><h2>Unit terdaftar</h2></div><small>${countText(units.length, 'unit')}</small></div>
-    <div class="inventory-controls">${tabs}${searchBox(key, f.q, 'Cari aset atau peminjam')}</div>
+    <div class="inventory-controls">${tabs}
+      <label class="filterbox">${icon('filter', 15)}<select id="inventory-category" data-filter="${key}" aria-label="Kelompok aset">${statuses(category, inventoryCategories)}</select></label>
+      ${searchBox(key, f.q, 'Cari aset atau peminjam')}</div>
     <div data-filter-results="${key}">${
       items.length
         ? `<div class="table-wrap"><table class="asset-table"><thead><tr><th>Aset</th><th>Peminjam</th><th>Lokasi simpan</th><th>Status</th><th class="qr-col">Label</th></tr></thead><tbody>
       ${items.map((a) => `<tr><td class="unit-name">${assetLink(a)}</td><td class="unit-person ${c.active.has(a.code) ? 'has-loan' : ''}">${currentBorrower(c.active.get(a.code))}</td><td class="unit-location">${esc(a.location)}</td><td class="unit-status">${badge(statusOf(c, a))}</td><td class="qr-col">${singleLabel(a.code)}</td></tr>`).join('')}</tbody></table></div>`
-        : empty(f.status === 'borrowed' && !f.q ? 'Tidak ada aset berstatus Dipinjam' : 'Aset tidak ditemukan', f.status === 'borrowed' && !f.q ? 'Peminjaman aktif akan muncul di sini.' : 'Coba nama, kode unit, atau filter status lain.')
+        : empty(f.status === 'borrowed' && !f.q ? 'Tidak ada aset berstatus Dipinjam' : 'Aset tidak ditemukan', f.status === 'borrowed' && !f.q ? 'Peminjaman aktif akan muncul di sini.' : 'Coba nama, kode unit, kelompok, atau status lain.')
     }
     ${rows.length > limit ? pager(rows.length, f.page, limit, key) : ''}</div></section>`;
 }
