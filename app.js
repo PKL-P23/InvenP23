@@ -11,7 +11,7 @@ import {
   adminPage,
   paperLabel,
   assetUrl,
-} from './pages.js';
+} from './pages.js?v=inventory-2';
 import { transactionForm, transactionScanner } from './transaction.js';
 
 const $ = (s) => document.querySelector(s),
