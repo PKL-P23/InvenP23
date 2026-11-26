@@ -291,7 +291,8 @@ export function assetDetail(c, code) {
       <button class="btn primary" type="submit">${icon('return', 18)}Lanjutkan</button>
       <p class="form-note">Catat saat barang diterima kembali. Unit langsung berstatus Tersedia.</p></form>`;
   }
-  return pageTitle(esc(a.name), esc(code) + ' · ' + esc(a.category), link('/peminjaman', 'Daftar peminjaman', 'btn')) +
+  const group = inventoryCategories.find(([id]) => id === inventoryCategory(a));
+  return pageTitle(esc(a.name), esc(code) + ' · ' + esc(group[1]), link('/peminjaman', 'Daftar peminjaman', 'btn')) +
     `<div class="details-grid"><section class="panel padded loan-panel"><div class="asset-heading">${tile(a)}<div><span class="field-caption">Status unit</span>${badge(statusOf(c, a))}</div></div>
       <h2>${title}</h2>${form}<div class="location">${icon('location', 18)}<span>Lokasi simpan<strong>${esc(a.location)}</strong></span></div></section>
       <section class="panel padded"><h2>Label unit</h2>${paperLabel(c, a)}<div class="row-actions"><button class="btn" data-save-qr="${esc(code)}">${icon('download', 17)}Simpan QR</button><button class="btn" data-print="${esc(code)}">${icon('printer', 17)}Cetak label</button></div></section></div>
