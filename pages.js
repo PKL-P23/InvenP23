@@ -68,12 +68,12 @@ const singleLabel = (code) =>
 
 export function shell() {
   return `<div class="layout"><button tabindex="-1" id="scrim" aria-label="Tutup menu" type="button" data-action="menu"></button>
-    <aside class="sidebar" id="sidebar"><a href="${pageHref('/')}" data-nav class="brand"><img src="./pinjambalik.svg?v=clay-1" width="40" height="40" alt=""><span>PinjamBalik<small>Inventaris ruang kerja</small></span></a>
+    <aside class="sidebar" id="sidebar"><a href="${pageHref('/')}" data-nav class="brand"><img src="./pinjambalik.svg?v=olive-1" width="40" height="40" alt=""><span>PinjamBalik<small>Inventaris ruang kerja</small></span></a>
       <button class="icon-btn drawer-close" type="button" data-action="menu" aria-label="Tutup menu">${icon('close')}</button>
       <nav aria-label="Navigasi utama">${sections.map(([url, n, i]) => `<a data-nav href="${pageHref(url)}" class="nav-item">${icon(i, 20)}${n}</a>`).join('')}<a class="nav-item nav-admin" data-nav href="${pageHref('/pengelola')}">${icon('shield', 20)}Pengelola</a></nav>
       <div class="side-bottom"><div class="profile"><span class="profile-icon">${icon('user', 18)}</span><span id="profile-name">Pengunjung<small>Akses melalui tautan</small></span></div></div>
     </aside>
-    <div class="workspace"><header class="topbar"><div class="crumb"><button type="button" class="icon-btn mobile-menu" id="menu-toggle" data-action="menu" aria-label="Buka menu" aria-expanded="false" aria-controls="sidebar">${icon('menu')}</button><a data-nav href="${pageHref('/')}" class="mobile-brand"><img src="./pinjambalik.svg?v=clay-1" width="32" height="32" alt="">PinjamBalik</a><span class="crumb-root">${icon('ledger',16)} Ruang kerja</span><span class="crumb-sep">/</span><strong id="crumb-title">Dashboard</strong></div><div class="bar-meta"><span id="demo-tag"></span><span class="date-top">${icon('calendar', 16)}<span id="top-date"></span></span></div></header>
+    <div class="workspace"><header class="topbar"><div class="crumb"><button type="button" class="icon-btn mobile-menu" id="menu-toggle" data-action="menu" aria-label="Buka menu" aria-expanded="false" aria-controls="sidebar">${icon('menu')}</button><a data-nav href="${pageHref('/')}" class="mobile-brand"><img src="./pinjambalik.svg?v=olive-1" width="32" height="32" alt="">PinjamBalik</a><span class="crumb-root">${icon('ledger',16)} Ruang kerja</span><span class="crumb-sep">/</span><strong id="crumb-title">Dashboard</strong></div><div class="bar-meta"><span id="demo-tag"></span><span class="date-top">${icon('calendar', 16)}<span id="top-date"></span></span></div></header>
     <main id="page" tabindex="-1" aria-busy="true"><div class="initial" role="status">Memuat inventaris…</div></main></div></div>`;
 }
 
