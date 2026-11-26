@@ -1,0 +1,154 @@
+/* One movable switch serves the desktop rail and the mobile toolbar. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.side-bottom .theme-toggle { width: 100%; padding: 4px 8px; margin: 10px 0; font-size: .88rem; }
+.bar-meta .theme-label { display: none; }
+.theme-track {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  justify-items: center;
+  width: 62px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid #6b9194;
+  border-radius: 25px;
+  background: #284d57;
+  box-shadow: inset 0 2px 4px #0d323a40;
+}
+.theme-track::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 2px; left: 2px;
+  width: calc(50% - 2px); bottom: 2px;
+  border-radius: inherit;
+  background: #ffe2c5;
+  box-shadow: inset 0 1px 2px #ffffff6b, 0 1px 4px #12282f4d;
+  transition: transform .22s cubic-bezier(.2,.8,.25,1), background-color .18s;
+}
+.theme-track svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme-track svg:first-child { color: #554033; }
+.theme-track svg:last-child { color: #bfd3d5; }
+.theme-toggle[aria-checked="true"] .theme-track::before { transform: translateX(100%); background-color: #cae9e1; }
+.theme-toggle[aria-checked="true"] svg:first-child { color: #c5d4d5; }
+.theme-toggle[aria-checked="true"] svg:last-child { color: #204651; }
+.theme-toggle:focus-visible { outline: 3px solid #316d76; outline-offset: 2px; }
+.sidebar .theme-toggle:focus-visible { outline-color: #ffd4af; }
+@media (hover: hover) {
+  .theme-toggle:hover .theme-track { border-color: #aad6cb; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-track::before { transition: none; }
+}
+@media (forced-colors: active) {
+  .theme-track { border-color: ButtonText; }
+  .theme-track::before { border: 2px solid Highlight; }
+}
+
+/* Screen-only colors keep the physical QR labels consistent in both modes. */
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #132228;
+    --surface: #203239;
+    --ink: #ecf4f2;
+    --muted: #bccdce;
+    --line: #41565c;
+    --blue: #a0ded2;
+    --teal: #92d6bd;
+    --field: #17282f;
+    --raised: #2b4149;
+    --peach-ink: #ffdbc4;
+    --peach-surface: #594036;
+    --lilac-ink: #eadff7;
+    --lilac-surface: #493e57;
+    --clay-shadow: inset 1px 1px 2px #e3f6f812, inset -1px -3px 5px #0613182b, 0 9px 22px -13px #050e158c;
+    --button-shadow: inset 0 1px 1px #ffffff1a, 0 3px 6px -3px #07151a85;
+    --press-shadow: inset 0 2px 4px #07181f57;
+  }
+  :root[data-theme="dark"] body {
+    background-image: radial-gradient(ellipse at 95% 4%,#38334870,transparent 48%),
+      radial-gradient(ellipse at 12% 37%,#21404370,transparent 58%),linear-gradient(145deg,#132228,#16292e);
+  }
+  :root[data-theme="dark"] :focus-visible { outline-color: var(--blue); }
+  :root[data-theme="dark"] .sidebar { border-color: #426266; background: linear-gradient(155deg,#22454b,#193941 55%,#192e38); }
+  :root[data-theme="dark"] .topbar, :root[data-theme="dark"] .history-tools, :root[data-theme="dark"] .modal-top { background: #1c2f35ed; border-color: var(--line); }
+  :root[data-theme="dark"] .panel, :root[data-theme="dark"] .admin-strip, :root[data-theme="dark"] .label-card, :root[data-theme="dark"] #dialog-content { color: var(--ink); border-color: var(--line); background: linear-gradient(142deg,#263a40,var(--surface) 78%); }
+  :root[data-theme="dark"] #modal::backdrop { background: #08141bc4; }
+  :root[data-theme="dark"] .board-heading { color: #e1f4ed; border-color: #3f6669; background: linear-gradient(110deg,#234047 8%,#294f52 52%,#44716d); }
+  :root[data-theme="dark"] .board-heading::after { opacity: .53; }
+  :root[data-theme="dark"] .board-heading > span { color: #d4eae2; background: #172e36d9; border-color: #6b90935c; }
+  :root[data-theme="dark"] .insight-total { color: #ffe7d7; border-color: #77574b; background: radial-gradient(ellipse at 87% 0%,#765342,transparent 67%),linear-gradient(140deg,#573c33,#493730); }
+  :root[data-theme="dark"] .insight-total small { color: var(--peach-ink); }
+  :root[data-theme="dark"] .insight-activity { border-color: #3e6160; background: linear-gradient(140deg,#284948,#21393b); }
+  :root[data-theme="dark"] .bar-filled { fill: #81c5b4; }
+  :root[data-theme="dark"] .bar-empty { fill: #768d90; }
+  :root[data-theme="dark"] .chart-today .bar-filled { fill: #c6efde; }
+  :root[data-theme="dark"] .week-bars .chart-today > span:last-child { color: #c6efde; }
+  :root[data-theme="dark"] .insight-status { border-color: #5a5167; background: linear-gradient(140deg,#443d50,#342f41); }
+  :root[data-theme="dark"] .status-ring { background: #332e3e; box-shadow: inset 0 1px 2px #ffffff24, 0 3px 7px #15131d55; }
+  :root[data-theme="dark"] .arc-base { stroke: #655971; }
+  :root[data-theme="dark"] .arc-requested { stroke: #d1b3e8; } :root[data-theme="dark"] .key-requested { background: #d1b3e8; }
+  :root[data-theme="dark"] .arc-borrowed { stroke: #f4b788; } :root[data-theme="dark"] .key-borrowed { background: #f4b788; }
+  :root[data-theme="dark"] .arc-return_requested { stroke: #a8c8e9; } :root[data-theme="dark"] .key-return_requested { background: #a8c8e9; }
+  :root[data-theme="dark"] .btn, :root[data-theme="dark"] .icon-btn { color: var(--ink); background: linear-gradient(145deg,#354e55,#2a3e45); border-color: #526d73; }
+  :root[data-theme="dark"] .btn:hover, :root[data-theme="dark"] .icon-btn:hover { background: #375259; }
+  :root[data-theme="dark"] .btn.primary, :root[data-theme="dark"] .btn.primary:hover { color: #183831; border-color: #a0ccbf; background: linear-gradient(145deg,#bce7d9,#8ec8b9); box-shadow: var(--button-shadow); }
+  :root[data-theme="dark"] .unit-action .btn:not(.primary) { color: var(--lilac-ink); border-color: #75647f; background: var(--lilac-surface); }
+  :root[data-theme="dark"] .btn.danger, :root[data-theme="dark"] .remove-link, :root[data-theme="dark"] .feedback, :root[data-theme="dark"] .delete-effect.active { color: #ffb6aa; }
+  :root[data-theme="dark"] .btn.delete-submit { background: #813e3b; color: #fff2ed; border-color: #ad6862; }
+  :root[data-theme="dark"] [data-category].btn { background: var(--raised); }
+  :root[data-theme="dark"] .status-tabs, :root[data-theme="dark"] .tab-pair { background: var(--field); }
+  :root[data-theme="dark"] .status-tabs button, :root[data-theme="dark"] .status-tabs button span, :root[data-theme="dark"] .tab-pair button { color: var(--muted); }
+  :root[data-theme="dark"] .status-tabs button:hover:not([aria-pressed="true"]) { background: var(--raised); }
+  :root[data-theme="dark"] [data-category].btn[aria-pressed="true"], :root[data-theme="dark"] .status-tabs button[aria-pressed="true"], :root[data-theme="dark"] .tab-pair button[aria-pressed="true"] {
+    color: #e6fbf1; background: #305d5e; border-color: #648c8a;
+  }
+  :root[data-theme="dark"] .status-tabs button[aria-pressed="true"] span { color: #d2eae2; }
+  :root[data-theme="dark"] .searchbox, :root[data-theme="dark"] .filterbox, :root[data-theme="dark"] .history-filter-fields > label, :root[data-theme="dark"] .field :is(input,select), :root[data-theme="dark"] .code-form input {
+    color: var(--ink); background-color: var(--field); border-color: #738c91;
+  }
+  :root[data-theme="dark"] :is(.searchbox,.filterbox,.history-filter-fields > label):focus-within, :root[data-theme="dark"] :is(.field input,.field select,.code-form input):focus-visible { border-color: var(--blue); outline-color: var(--blue); }
+  :root[data-theme="dark"] select { color: var(--ink); background-color: var(--field); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23baccce' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+  :root[data-theme="dark"] option { background: var(--field); color: var(--ink); }
+  :root[data-theme="dark"] input::placeholder { color: #aabdc0; }
+  :root[data-theme="dark"] .history-feed .panel-head small, :root[data-theme="dark"] .tone-purple, :root[data-theme="dark"] .badge:is(.pending,.pending-return,.gray) { color: var(--lilac-ink); background: var(--lilac-surface); }
+  :root[data-theme="dark"] .history-feed .title-icon, :root[data-theme="dark"] .tone-rose, :root[data-theme="dark"] .badge.amber, :root[data-theme="dark"] .alert { color: var(--peach-ink); background: var(--peach-surface); }
+  :root[data-theme="dark"] .tone-blue, :root[data-theme="dark"] .initials, :root[data-theme="dark"] .stat-icon.blue { color: #cee5fa; background: #354c5b; }
+  :root[data-theme="dark"] .tone-teal, :root[data-theme="dark"] .badge:is(.green,.blue), :root[data-theme="dark"] .scan-task .held-unit, :root[data-theme="dark"] .held-check, :root[data-theme="dark"] .receipt-mark { color: #c3ebd9; background: #2c4b46; }
+  :root[data-theme="dark"] .held-asset small { color: #c3ebd9; }
+  :root[data-theme="dark"] .asset-icon, :root[data-theme="dark"] .initials, :root[data-theme="dark"] .title-icon { box-shadow: var(--button-shadow); }
+  :root[data-theme="dark"] .asset-link small, :root[data-theme="dark"] .request-summary, :root[data-theme="dark"] th { color: #d2e6e4; background: var(--raised); }
+  :root[data-theme="dark"] tbody tr:hover { background: #2a4046; }
+  :root[data-theme="dark"] .panel-head > svg, :root[data-theme="dark"] .title-icon { color: var(--muted); }
+  :root[data-theme="dark"] .sync-state { color: #b7e7d3; }
+  :root[data-theme="dark"] .sync-state.offline { color: var(--peach-ink); }
+  :root[data-theme="dark"] .skip { background: var(--field); color: var(--blue); }
+  :root[data-theme="dark"] .demo-tag { color: var(--muted); border-color: var(--line); }
+  :root[data-theme="dark"] #notice:not(:empty) { color: #1d3d39; background: #bfdfd6; }
+  :root[data-theme="dark"] .paper-label { color-scheme: light; color: #101c2c; background: white; }
+  :root[data-theme="dark"] .paper-label .print-brand { color: #225963; }
+}
+@media screen and (max-width: 700px) {
+  :root[data-theme="dark"] .history-feed .log-start, :root[data-theme="dark"] .history-feed .log-end { background: #293f45; }
+}
+@media print {
+  .theme-toggle { display: none !important; }
+}
