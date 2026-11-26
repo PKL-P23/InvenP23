@@ -5,6 +5,7 @@ import {
   shell,
   sections,
   inventory,
+  lending,
   historyPage,
   labels,
   matchingLabelAssets,
@@ -12,17 +13,18 @@ import {
   adminPage,
   paperLabel,
   assetUrl,
-} from './pages.js?v=labels-3';
+} from './pages.js?v=lending-1';
 import { transactionForm, transactionScanner } from './transaction.js';
 
 const $ = (s) => document.querySelector(s),
   modal = $('#modal');
 const filter = () => ({ q: '', status: 'all', page: 1, from: '', to: '' });
+const catalogFilter = () => ({ ...filter(), category: 'all', pageSize: '50' });
 const c = {
   data: null,
   etag: null,
   session: { admin: null, baseUrl: serviceOrigin },
-  filters: { approvals: { page: 1 }, inventory: { ...filter(), category: 'all', pageSize: '50' }, history: filter(), labels: { ...filter(), category: 'all' } },
+  filters: { approvals: { page: 1 }, inventory: catalogFilter(), lending: catalogFilter(), adminCatalog: catalogFilter(), history: filter(), labels: { ...filter(), category: 'all' } },
   byCode: new Map(),
   active: new Map(),
   audit: [],
@@ -85,6 +87,7 @@ function navigate(path) {
   render(false);
   window.scrollTo(0, 0);
   page.focus({ preventScroll: true });
+  if (path.startsWith('/aset/')) void refresh(true);
   if (route() === '/pengelola' && c.session.admin) fetchAudit();
 }
 function hideMenu() {
@@ -230,7 +233,7 @@ function render(preserve = true) {
     : 'Pengunjung<small>Akses melalui tautan</small>';
   document.querySelectorAll('.nav-item').forEach((el) => {
     const path = el.origin === location.origin ? routePath(el.hash) : null;
-    const active = path === p || (p === '/riwayat' && path === '/') || ((p.startsWith('/aset/') || p === '/pindai') && path === '/inventaris');
+    const active = path === p || (p === '/riwayat' && path === '/') || (p.startsWith('/aset/') && path === '/peminjaman') || (p === '/pindai' && path === '/inventaris');
     if (active) el.setAttribute('aria-current', 'page');
     else el.removeAttribute('aria-current');
   });
@@ -249,10 +252,7 @@ function render(preserve = true) {
     $('#scan-notices').innerHTML = pendingAlert + connection;
     page.setAttribute('aria-busy', 'false');
     if (!camera && !modal.open) {
-      camera = transactionScanner({ state:c, openAsset:code => {
-        navigate(assetPath(code));
-        void refresh(true);
-      } });
+      camera = transactionScanner({ state:c, openAsset:code => navigate(assetPath(code)) });
       camera.start();
     }
     return;
@@ -266,6 +266,7 @@ function render(preserve = true) {
         )
       : '<div class="initial">Memuat inventaris…</div>';
   else if (p === '/' || p === '/riwayat') content = historyPage(c);
+  else if (p === '/peminjaman') content = lending(c);
   else if (p === '/inventaris') content = inventory(c);
   else if (p === '/label') content = labels(c);
   else if (p === '/pengelola') content = adminPage(c);
@@ -671,7 +672,7 @@ document.addEventListener('input', (e) => {
     c.filters[k].q = e.target.value;
     c.filters[k].page = 1;
     // Keep the active input mounted while filtering so the mobile keyboard stays open.
-    const views = { inventory, history: historyPage, labels };
+    const views = { inventory, lending, adminCatalog: adminPage, history: historyPage, labels };
     const draft = document.createElement('template');
     draft.innerHTML = views[k](c);
     for (const marker of ['data-filter-results', 'data-result-count', 'data-label-actions']) {
@@ -683,9 +684,10 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   const el = e.target;
-  if (el.id === 'inventory-size') {
-    c.filters.inventory.pageSize = el.value;
-    c.filters.inventory.page = 1;
+  if (el.dataset.pageSize) {
+    const f = c.filters[el.dataset.pageSize];
+    f.pageSize = el.value;
+    f.page = 1;
     render();
     return;
   }

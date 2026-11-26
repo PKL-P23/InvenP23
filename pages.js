@@ -23,6 +23,7 @@ import {
 
 export const sections = [
   ['/', 'Riwayat', 'history'],
+  ['/peminjaman', 'Peminjaman', 'borrowed'],
   ['/inventaris', 'Daftar aset', 'box'],
   ['/label', 'Label QR', 'qr'],
 ];
@@ -74,7 +75,7 @@ export function shell() {
     </aside>
     <div class="workspace"><header class="topbar"><div class="crumb"><a data-nav href="${pageHref('/')}" class="mobile-brand"><img src="./pinjambalik.svg" width="32" height="32" alt="">PinjamBalik</a><span class="crumb-root">${icon('ledger',16)} Ruang kerja</span><span class="crumb-sep">/</span><strong id="crumb-title">Dashboard</strong></div><div class="bar-meta"><span id="demo-tag"></span><span class="date-top">${icon('calendar', 16)}<span id="top-date"></span></span><a class="home-admin" data-nav href="${pageHref('/pengelola')}">${icon('lock',16)}Pengelola</a><button type="button" class="icon-btn mobile-menu" id="menu-toggle" data-action="menu" aria-label="Buka menu" aria-expanded="false" aria-controls="sidebar">${icon('menu')}</button></div></header>
     <main id="page" tabindex="-1" aria-busy="true"><div class="initial" role="status">Memuat inventaris…</div></main></div>
-    <nav class="mobile-nav" aria-label="Navigasi bawah"><a data-nav class="nav-item" href="${pageHref('/')}">${icon('history')}Riwayat</a><a data-nav class="nav-item" href="${pageHref('/inventaris')}">${icon('box')}Aset</a><a data-nav class="nav-item" href="${pageHref('/label')}">${icon('qr')}Label QR</a><a data-nav class="nav-item" href="${pageHref('/pengelola')}">${icon('shield')}Pengelola</a></nav></div>`;
+    <nav class="mobile-nav" aria-label="Navigasi bawah"><a data-nav class="nav-item" href="${pageHref('/')}">${icon('history')}Riwayat</a><a data-nav class="nav-item" href="${pageHref('/peminjaman')}">${icon('borrowed')}Peminjaman</a><a data-nav class="nav-item" href="${pageHref('/inventaris')}">${icon('box')}Aset</a><a data-nav class="nav-item" href="${pageHref('/label')}">${icon('qr')}Label QR</a><a data-nav class="nav-item" href="${pageHref('/pengelola')}">${icon('shield')}Pengelola</a></nav></div>`;
 }
 
 const inventoryCategories = [
@@ -101,50 +102,61 @@ function categoryButtons(section, selected) {
   return `<div class="tools-row" role="group" aria-label="Kelompok aset">${buttons.join('')}</div>`;
 }
 
-function inventoryPanel(c) {
-  const key = 'inventory',
-    f = c.filters[key];
-  const units = c.data.assets.filter(a => !a.archived);
-  const category = f.category || 'all';
-  const grouped = category === 'all' ? units : units.filter(a => inventoryCategory(a) === category);
-  const stage = a => loanStage(c.active.get(a.code));
+function inventoryStatusTabs(grouped, c, f) {
   const counts = { available: 0, borrowed: 0 };
   for (const a of grouped) {
-    const status = stage(a);
-    if (Object.hasOwn(counts, status)) counts[status]++;
+    const stage = loanStage(c.active.get(a.code));
+    if (Object.hasOwn(counts, stage)) counts[stage]++;
   }
-  const rows = grouped.filter(
-    (a) =>
-      isMatch(f.q, [a.name, a.code, a.location, a.category, c.active.get(a.code)?.original_borrower, c.active.get(a.code)?.borrower]) &&
-      (f.status === 'all' || f.status === stage(a)),
-  );
-  const size = f.pageSize || '50';
-  const limit = size === 'all' ? Math.max(1, rows.length) : Number(size);
+  const options = [['all', 'Semua', grouped.length], ['available', 'Tersedia', counts.available], ['borrowed', 'Dipinjam', counts.borrowed]];
+  return `<div class="status-tabs" role="group" aria-label="Filter status aset">${options.map(([value, label, count]) => `<button type="button" data-unit-status="${value}" data-section="adminCatalog" aria-pressed="${f.status === value}">${label}<span>${total(count)}</span></button>`).join('')}</div>`;
+}
+
+function catalogRow(c, asset, key) {
+  const loan = c.active.get(asset.code);
+  const status = `<td class="unit-status">${badge(statusOf(c, asset))}</td>`;
+  const name = `<td class="unit-name">${assetLink(asset)}</td>`;
+  if (key === 'lending') {
+    const returning = ['borrowed', 'return_requested'].includes(loanStage(loan));
+    const action = link(assetPath(asset.code), returning ? 'Kembalikan' : 'Pinjam', returning ? 'btn' : 'btn primary');
+    return `<tr>${name}${status}<td class="unit-action">${action}</td></tr>`;
+  }
+  const person = key === 'adminCatalog' ? `<td class="unit-person ${loan ? 'has-loan' : ''}">${currentBorrower(loan)}</td>` : '';
+  return `<tr>${name}${person}<td class="unit-location">${esc(asset.location)}</td>${status}<td class="qr-col">${singleLabel(asset.code)}</td></tr>`;
+}
+
+function inventoryPanel(c, key) {
+  const f = c.filters[key], lending = key === 'lending', admin = key === 'adminCatalog';
+  const grouped = c.data.assets.filter(a => !a.archived &&
+    (key !== 'inventory' || !c.active.has(a.code)) &&
+    (f.category === 'all' || inventoryCategory(a) === f.category));
+  const rows = grouped.filter(a => {
+    const loan = c.active.get(a.code);
+    const fields = lending ? [a.name, a.code] : [a.name, a.code, a.location, a.category];
+    if (admin) fields.push(loan?.original_borrower, loan?.borrower);
+    return isMatch(f.q, fields) && (!admin || f.status === 'all' || f.status === loanStage(loan));
+  });
+  const limit = f.pageSize === 'all' ? Math.max(1, rows.length) : Number(f.pageSize);
   f.page = Math.min(f.page, Math.max(1, Math.ceil(rows.length / limit)));
   const items = rows.slice((f.page - 1) * limit, f.page * limit);
-  const options = [['all', 'Semua', grouped.length], ['available', 'Tersedia', counts.available], ['borrowed', 'Dipinjam', counts.borrowed]];
-  const tabs = `<div class="status-tabs" role="group" aria-label="Filter status aset">${options.map(([value, label, count]) => `<button type="button" data-unit-status="${value}" data-section="${key}" aria-pressed="${f.status === value}">${label}<span>${total(count)}</span></button>`).join('')}</div>`;
-  return `<section class="panel inventory"><div class="panel-head"><div class="head-pair"><h2>Unit terdaftar</h2></div><small>${countText(units.length, 'unit')}</small></div>
-    ${categoryButtons(key, category)}
-    <div class="inventory-controls">${tabs}
-      <label class="filterbox">${icon('box', 15)}<select id="inventory-size" aria-label="Jumlah aset per halaman">${statuses(size, [['50','50 aset per halaman'], ['100','100 aset per halaman'], ['all','Semua aset']])}</select></label>
-      ${searchBox(key, f.q, 'Cari aset atau peminjam')}</div>
-    <div data-filter-results="${key}">${
-      items.length
-        ? `<div class="table-wrap"><table class="asset-table"><thead><tr><th>Aset</th><th>Peminjam</th><th>Lokasi simpan</th><th>Status</th><th class="qr-col">Label</th></tr></thead><tbody>
-      ${items.map((a) => `<tr><td class="unit-name">${assetLink(a)}</td><td class="unit-person ${c.active.has(a.code) ? 'has-loan' : ''}">${currentBorrower(c.active.get(a.code))}</td><td class="unit-location">${esc(a.location)}</td><td class="unit-status">${badge(statusOf(c, a))}</td><td class="qr-col">${singleLabel(a.code)}</td></tr>`).join('')}</tbody></table></div>`
-        : empty(f.status === 'borrowed' && !f.q ? 'Tidak ada aset berstatus Dipinjam' : 'Aset tidak ditemukan', f.status === 'borrowed' && !f.q ? 'Peminjaman aktif akan muncul di sini.' : 'Coba nama, kode unit, kelompok, atau status lain.')
-    }
+  const columns = lending ? '<th>Status</th><th>Tindakan</th>' : `${admin ? '<th>Peminjam</th>' : ''}<th>Lokasi simpan</th><th>Status</th><th class="qr-col">Label</th>`;
+  const sizeOptions = [['50','50 aset per halaman'], ['100','100 aset per halaman'], ['all','Semua aset']];
+  return `<section class="panel inventory"><div class="panel-head"><h2>${key === 'inventory' ? 'Aset tersedia' : 'Unit terdaftar'}</h2><small data-result-count="${key}">${countText(rows.length, 'unit')}</small></div>
+    <div class="inventory-controls">${searchBox(key, f.q, admin ? 'Cari aset atau peminjam' : 'Cari kode atau nama barang')}
+      <label class="filterbox">${icon('box', 15)}<select id="${key}-size" data-page-size="${key}" aria-label="Jumlah aset per halaman">${statuses(f.pageSize, sizeOptions)}</select></label></div>
+    ${categoryButtons(key, f.category)}
+    ${admin ? `<div class="inventory-controls">${inventoryStatusTabs(grouped, c, f)}</div>` : ''}
+    <div data-filter-results="${key}">${items.length
+      ? `<div class="table-wrap"><table class="asset-table${lending ? ' lending-table' : ''}"><thead><tr><th>Nama dan kode barang</th>${columns}</tr></thead><tbody>${items.map(a => catalogRow(c, a, key)).join('')}</tbody></table></div>`
+      : empty(key === 'inventory' ? 'Tidak ada aset tersedia' : 'Aset tidak ditemukan', 'Coba kode, nama barang, atau kelompok lain.')}
     ${rows.length > limit ? pager(rows.length, f.page, limit, key) : ''}</div></section>`;
 }
 export function inventory(c) {
-  return (
-    pageTitle(
-      'Daftar aset',
-      'Cari unit, lihat lokasi simpan, atau buka halaman barang.',
-      link('/pindai', icon('scan', 18) + 'Pindai QR', 'btn primary'),
-    ) + inventoryPanel(c)
-  );
+  return pageTitle('Daftar aset', 'Lihat barang yang tersedia dan lokasi simpannya.',
+    link('/pindai', icon('scan', 18) + 'Pindai QR', 'btn primary')) + inventoryPanel(c, 'inventory');
+}
+export function lending(c) {
+  return pageTitle('Peminjaman', 'Cari barang, lalu pilih Pinjam atau Kembalikan.') + inventoryPanel(c, 'lending');
 }
 function borrowerAtCheckout(loan, showOfficer = false) {
   const original = loan.original_borrower ?? loan.borrower;
@@ -163,7 +175,7 @@ function returnIdentity(l) {
   return l.return_name ? '<small class="loan-work-unit">Pengembali · <strong>' + esc(l.return_name) + '</strong></small><small class="loan-work-unit">Unit kerja · ' + esc(l.return_work_unit) + '</small>' : '';
 }
 function historyTable(c, rows, admin = false, detailed = false) {
-  if (!rows.length) return empty('Belum ada peminjaman', 'Riwayat muncul setelah petugas piket mencatat peminjaman melalui QR barang.');
+  if (!rows.length) return empty('Belum ada peminjaman', 'Riwayat muncul setelah petugas piket mencatat peminjaman melalui tab Peminjaman atau QR barang.');
   const body = rows.map(l => {
     const stage = loanStage(l);
     const borrowOfficer = l.requested_officer || (l.borrow_approved_by !== 'admin' && l.borrow_approved_by);
@@ -277,7 +289,7 @@ export function assetDetail(c, code) {
       <button class="btn primary" type="submit">${icon('return', 18)}Lanjutkan</button>
       <p class="form-note">Catat saat barang diterima kembali. Unit langsung berstatus Tersedia.</p></form>`;
   }
-  return pageTitle(esc(a.name), esc(code) + ' · ' + esc(a.category), link('/inventaris', 'Daftar aset', 'btn')) +
+  return pageTitle(esc(a.name), esc(code) + ' · ' + esc(a.category), link('/peminjaman', 'Daftar peminjaman', 'btn')) +
     `<div class="details-grid"><section class="panel padded loan-panel"><div class="asset-heading">${tile(a)}<div><span class="field-caption">Status unit</span>${badge(statusOf(c, a))}</div></div>
       <h2>${title}</h2>${form}<div class="location">${icon('location', 18)}<span>Lokasi simpan<strong>${esc(a.location)}</strong></span></div></section>
       <section class="panel padded"><h2>Label unit</h2>${paperLabel(c, a)}<div class="row-actions"><button class="btn" data-save-qr="${esc(code)}">${icon('download', 17)}Simpan QR</button><button class="btn" data-print="${esc(code)}">${icon('printer', 17)}Cetak label</button></div></section></div>
@@ -312,7 +324,7 @@ export function adminPage(c) {
   return (
     pageTitle('Dashboard pengelola', 'Akun · ' + esc(c.session.admin),
       `<div class="admin-page-actions">${button('add', 'Tambah aset', 'plus', 'btn small')}${link('/riwayat', 'Kelola riwayat', 'btn')}${button('logout', 'Keluar', 'lock')}</div>`) +
-    approvalQueue(c) + inventoryPanel(c) + `
+    approvalQueue(c) + inventoryPanel(c, 'adminCatalog') + `
     <section class="panel spaced"><div class="panel-head"><h2>Jejak koreksi nama</h2></div>${c.audit?.length ? `<div class="table-wrap"><table><thead><tr><th>Unit</th><th>Nama awal</th><th>Nama baru</th><th>Alasan</th><th>Pengelola dan waktu</th></tr></thead><tbody>${c.audit.map((x) => `<tr><td>${esc(x.asset_code)}</td><td>${esc(x.previous)}</td><td>${esc(x.replacement)}</td><td>${esc(x.reason)}</td><td>${esc(x.actor)}<small class="block">${stamp(x.corrected_at)}</small></td></tr>`).join('')}</tbody></table></div>` : empty('Belum ada koreksi nama', 'Untuk membetulkan nama, buka peminjaman pada halaman riwayat.')}</section>`
   );
 }
