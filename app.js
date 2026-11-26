@@ -13,7 +13,7 @@ import {
   adminPage,
   paperLabel,
   assetUrl,
-} from './pages.js?v=olive-1';
+} from './pages.js?v=teal-1';
 import { transactionForm, transactionScanner } from './transaction.js?v=short-1';
 
 const $ = (s) => document.querySelector(s),
