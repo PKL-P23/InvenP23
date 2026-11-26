@@ -6,7 +6,7 @@ export function transactionForm() {
     <div class="scan-frame"><video id="scan-video" muted playsinline autoplay aria-label="Pratinjau kamera"></video><canvas class="scan-still" aria-hidden="true" hidden></canvas><span class="finder" aria-hidden="true"></span><svg class="scan-outline" aria-hidden="true" preserveAspectRatio="xMidYMid meet" hidden><polygon vector-effect="non-scaling-stroke"></polygon></svg></div>
     <p id="scan-status" class="status-msg" role="status" tabindex="-1">Menyiapkan kamera…</p>
     <div class="scan-controls"><button class="btn small" id="camera-retry" type="button" hidden>${icon('camera',17)}Aktifkan kamera</button><label class="btn small" role="button" tabindex="0" id="choose-photo">${icon('image',17)}Pilih foto QR<input id="scan-photo" type="file" accept="image/*" hidden></label></div>
-    <details class="manual-fallback"><summary>Masukkan kode unit</summary><form id="manual-scan" class="code-form"><label class="field" for="unit-code">Kode pada label</label><div><input id="unit-code" name="code" maxlength="24" autocapitalize="characters" autocomplete="off" placeholder="Contoh PB-001-001" required><button class="btn" type="submit">Buka aset</button></div></form></details></div>`;
+<details class="manual-fallback"><summary>Masukkan kode unit</summary><form id="manual-scan" class="code-form"><label class="field" for="unit-code">Kode pada label</label><div><input id="unit-code" name="code" maxlength="24" autocapitalize="characters" autocomplete="off" placeholder="Contoh A001" required><button class="btn" type="submit">Buka aset</button></div></form></details></div>`;
 }
 
 export function transactionScanner({ state, openAsset }) {

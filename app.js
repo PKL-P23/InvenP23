@@ -13,8 +13,8 @@ import {
   adminPage,
   paperLabel,
   assetUrl,
-} from './pages.js?v=lending-1';
-import { transactionForm, transactionScanner } from './transaction.js';
+} from './pages.js?v=short-1';
+import { transactionForm, transactionScanner } from './transaction.js?v=short-1';
 
 const $ = (s) => document.querySelector(s),
   modal = $('#modal');
@@ -146,7 +146,17 @@ async function refresh(force = false) {
     c.offline = false;
     c.data = data;
     c.etag = res.headers.get('ETag');
-    c.byCode = new Map(data.assets.map((a) => [a.code, a]));
+    c.byCode = new Map();
+    for (const asset of data.assets) {
+      asset.originalCode = asset.code;
+      asset.code = asset.short_code || asset.code;
+      c.byCode.set(asset.originalCode, asset);
+      c.byCode.set(asset.code, asset);
+    }
+    const orderByGroup = 'ANTL';
+    data.assets.sort((a, b) => orderByGroup.indexOf(a.code[0]) - orderByGroup.indexOf(b.code[0]) ||
+      Number(a.code.slice(1)) - Number(b.code.slice(1)));
+    for (const loan of data.loans) loan.asset_code = c.byCode.get(loan.asset_code)?.code || loan.asset_code;
     c.active = new Map(data.loans.filter((l) => !l.returned_at).map((l) => [l.asset_code, l]));
     render();
   } catch {
@@ -319,6 +329,7 @@ function requestId() {
   return [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20)].join('-');
 }
 function receipt(r) {
+  r = { ...r, code: c.byCode.get(r.code)?.code || r.code };
   if (r.kind === 'borrow' || r.kind === 'return') {
     c.filters.history = filter();
     navigate('/');
@@ -545,7 +556,7 @@ function adminDialog(kind, key) {
   if (kind === 'add') {
     dialog(
       'Tambah aset',
-      `<form data-form="create"><label class="field">Kode unit<input name="code" required maxlength="24" placeholder="Contoh OB-004"></label><label class="field">Nama barang<input name="name" required maxlength="160"></label><label class="field">Kategori<select name="category">${statuses(
+      `<form data-form="create"><p class="help">Kode barang dibuat otomatis sesuai kategori.</p><label class="field">Nama barang<input name="name" required maxlength="160"></label><label class="field">Kategori<select name="category">${statuses(
         '',
         c.data.categories.map((x) => [x, x]),
       )}</select></label><label class="field">Lokasi simpan<input name="location" required maxlength="80" placeholder="Lemari A · Rak 1"></label><button class="btn primary" type="submit">Simpan aset</button></form>`,

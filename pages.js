@@ -89,7 +89,7 @@ function inventoryCategory(asset) {
     case 'JARINGAN': return 'network';
     case 'ATK': return 'office';
     // These imported types are label tape, cutter refills, and a label printer.
-    case 'LAIN LAIN': return /^PB-(050|051|094)-\d{3}$/.test(asset.code) ? 'office' : 'other';
+    case 'LAIN LAIN': return asset.short_code?.startsWith('T') || /^PB-(050|051|094)-\d{3}$/.test(asset.originalCode || asset.code) ? 'office' : 'other';
     default: return 'other';
   }
 }
@@ -132,7 +132,8 @@ function inventoryPanel(c, key) {
     (f.category === 'all' || inventoryCategory(a) === f.category));
   const rows = grouped.filter(a => {
     const loan = c.active.get(a.code);
-    const fields = lending ? [a.name, a.code] : [a.name, a.code, a.location, a.category];
+    const fields = [a.name, a.code, a.originalCode];
+    if (!lending) fields.push(a.location, a.category);
     if (admin) fields.push(loan?.original_borrower, loan?.borrower);
     return isMatch(f.q, fields) && (!admin || f.status === 'all' || f.status === loanStage(loan));
   });
@@ -202,7 +203,7 @@ export function historyPage(c) {
     iso && (!f.from || dayKey(iso) >= f.from) && (!f.to || dayKey(iso) <= f.to);
   const rows = c.data.loans.filter(
     (l) =>
-      isMatch(f.q, [l.asset_code, c.byCode.get(l.asset_code)?.name, l.borrower, l.original_borrower, l.work_unit, l.return_name, l.return_work_unit, l.return_officer, l.requested_officer, l.borrow_approved_by, l.return_approved_by, l.verified_by]) &&
+      isMatch(f.q, [l.asset_code, c.byCode.get(l.asset_code)?.originalCode, c.byCode.get(l.asset_code)?.name, l.borrower, l.original_borrower, l.work_unit, l.return_name, l.return_work_unit, l.return_officer, l.requested_officer, l.borrow_approved_by, l.return_approved_by, l.verified_by]) &&
       (f.status === 'all' || f.status === loanStage(l)) &&
       [l.requested_at, l.borrowed_at, l.return_requested_at, l.returned_at].some(dated),
   ).sort((a, b) => latestEvent(b).localeCompare(latestEvent(a)));
@@ -238,7 +239,7 @@ export function matchingLabelAssets(c) {
   const { category, q } = c.filters.labels;
   return c.data.assets.filter(a => !a.archived &&
     (!category || category === 'all' || inventoryCategory(a) === category) &&
-    isMatch(q, [a.name, a.code, a.location]));
+    isMatch(q, [a.name, a.code, a.originalCode, a.location]));
 }
 
 export function labels(c) {
@@ -249,7 +250,7 @@ export function labels(c) {
   const visible = units.slice((f.page - 1) * size, f.page * size);
   const unfiltered = (!f.category || f.category === 'all') && !f.q.trim();
   const pack = unfiltered && new URL(c.session.baseUrl || location.origin).origin === serviceOrigin
-    ? '<a class="btn" href="https://rakruang-qr.geksonsimanjuntak00.chatgpt.site/label-inventaris.pdf" download>Unduh 695 label awal (PDF)</a>' : '';
+    ? '<a class="btn" href="https://rakruang-qr.geksonsimanjuntak00.chatgpt.site/label-inventaris.pdf?v=short-1" download>Unduh 695 label awal (PDF)</a>' : '';
   return pageTitle('Label QR', 'Tempel satu label pada tiap unit. Kamera ponsel akan membuka halaman barang tersebut.',
     `<div class="admin-page-actions" data-label-actions="labels">${pack}
       ${units.length > size ? button('print-page', 'Cetak halaman ini', 'printer') : ''}
@@ -268,6 +269,7 @@ export function assetDetail(c, code) {
       empty('Kode unit tidak ditemukan', 'Periksa kode pada label atau hubungi pengelola.') +
       link('/inventaris', 'Buka daftar aset', 'btn')
     );
+  code = a.code;
   const active = c.active.get(code), stage = loanStage(active);
   const logs = c.data.loans.filter(l => l.asset_code === code).sort((x, y) => latestEvent(y).localeCompare(latestEvent(x)));
   let title, form;
@@ -325,6 +327,6 @@ export function adminPage(c) {
     pageTitle('Dashboard pengelola', 'Akun · ' + esc(c.session.admin),
       `<div class="admin-page-actions">${button('add', 'Tambah aset', 'plus', 'btn small')}${link('/riwayat', 'Kelola riwayat', 'btn')}${button('logout', 'Keluar', 'lock')}</div>`) +
     approvalQueue(c) + inventoryPanel(c, 'adminCatalog') + `
-    <section class="panel spaced"><div class="panel-head"><h2>Jejak koreksi nama</h2></div>${c.audit?.length ? `<div class="table-wrap"><table><thead><tr><th>Unit</th><th>Nama awal</th><th>Nama baru</th><th>Alasan</th><th>Pengelola dan waktu</th></tr></thead><tbody>${c.audit.map((x) => `<tr><td>${esc(x.asset_code)}</td><td>${esc(x.previous)}</td><td>${esc(x.replacement)}</td><td>${esc(x.reason)}</td><td>${esc(x.actor)}<small class="block">${stamp(x.corrected_at)}</small></td></tr>`).join('')}</tbody></table></div>` : empty('Belum ada koreksi nama', 'Untuk membetulkan nama, buka peminjaman pada halaman riwayat.')}</section>`
+    <section class="panel spaced"><div class="panel-head"><h2>Jejak koreksi nama</h2></div>${c.audit?.length ? `<div class="table-wrap"><table><thead><tr><th>Unit</th><th>Nama awal</th><th>Nama baru</th><th>Alasan</th><th>Pengelola dan waktu</th></tr></thead><tbody>${c.audit.map((x) => `<tr><td>${esc(c.byCode.get(x.asset_code)?.code || x.asset_code)}</td><td>${esc(x.previous)}</td><td>${esc(x.replacement)}</td><td>${esc(x.reason)}</td><td>${esc(x.actor)}<small class="block">${stamp(x.corrected_at)}</small></td></tr>`).join('')}</tbody></table></div>` : empty('Belum ada koreksi nama', 'Untuk membetulkan nama, buka peminjaman pada halaman riwayat.')}</section>`
   );
 }
