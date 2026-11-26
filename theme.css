@@ -2,8 +2,7 @@
 .theme-toggle {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
   min-height: 44px;
   padding: 0;
   border: 0;
@@ -15,8 +14,7 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.side-bottom .theme-toggle { width: 100%; padding: 4px 8px; margin: 10px 0; font-size: .88rem; }
-.bar-meta .theme-label { display: none; }
+.side-bottom .theme-toggle { margin: 10px 8px; }
 .theme-track {
   position: relative;
   isolation: isolate;
