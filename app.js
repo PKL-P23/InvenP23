@@ -13,7 +13,7 @@ import {
   adminPage,
   paperLabel,
   assetUrl,
-} from './pages.js?v=short-2';
+} from './pages.js?v=clay-1';
 import { transactionForm, transactionScanner } from './transaction.js?v=short-1';
 
 const $ = (s) => document.querySelector(s),
@@ -46,9 +46,17 @@ let pending = readPending(),
   polling = false,
   shownDay = '';
 $('#shell').innerHTML = shell();
-const page = $('#page'), bottomNav = $('.mobile-nav'), navHome = bottomNav.parentElement;
+const page = $('#page');
+const sidebar = $('#sidebar');
+const narrowScreen = window.matchMedia('(max-width: 900px)');
+hideMenu();
+narrowScreen.addEventListener('change', () => {
+  const focusWasInSidebar = sidebar.contains(document.activeElement);
+  hideMenu();
+  if (narrowScreen.matches && focusWasInSidebar) $('#menu-toggle').focus();
+});
 // Some phone browsers resize only the visual viewport when the keyboard opens.
-function fitNavigationToViewport() {
+function fitDialogToViewport() {
   const viewport = window.visualViewport;
   if (!viewport) return;
   const covered = Math.abs(viewport.scale - 1) < 0.01 ? Math.max(0, innerHeight - viewport.height) : 0;
@@ -56,10 +64,10 @@ function fitNavigationToViewport() {
   document.documentElement.style.setProperty('--visible-top', Math.round(top) + 'px');
   document.documentElement.style.setProperty('--covered-bottom', Math.round(covered - top) + 'px');
 }
-window.visualViewport?.addEventListener('resize', fitNavigationToViewport);
-window.visualViewport?.addEventListener('scroll', fitNavigationToViewport);
-window.addEventListener('resize', fitNavigationToViewport);
-fitNavigationToViewport();
+window.visualViewport?.addEventListener('resize', fitDialogToViewport);
+window.visualViewport?.addEventListener('scroll', fitDialogToViewport);
+window.addEventListener('resize', fitDialogToViewport);
+fitDialogToViewport();
 
 function keepPending(p) {
   pending = p;
@@ -94,6 +102,7 @@ function hideMenu() {
   document.body.classList.remove('menu-open');
   $('#menu-toggle').setAttribute('aria-expanded', 'false');
   $('.workspace').inert = false;
+  sidebar.inert = narrowScreen.matches;
 }
 function menu() {
   if (document.body.classList.contains('menu-open')) {
@@ -101,6 +110,8 @@ function menu() {
     $('#menu-toggle').focus();
     return;
   }
+  if (!narrowScreen.matches) return;
+  sidebar.inert = false;
   document.body.classList.add('menu-open');
   $('#menu-toggle').setAttribute('aria-expanded', 'true');
   $('.workspace').inert = true;
@@ -293,24 +304,17 @@ function stopCamera() {
 function closeDialog() {
   stopCamera();
   if (modal.open) modal.close();
-  if (bottomNav.parentElement !== navHome) navHome.append(bottomNav);
 }
 function dialog(title, body) {
   hideMenu();
   stopCamera();
   $('#dialog-content').innerHTML =
     `<div class="modal-top"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-btn" type="button" data-action="close" aria-label="Tutup dialog">${icon('close', 21)}</button></div><div class="modal-body">${body}<p id="dialog-error" class="feedback" role="alert"></p></div>`;
-  if (!modal.open) {
-    modal.append(bottomNav);
-    modal.showModal();
-  }
+  if (!modal.open) modal.showModal();
   $('#dialog-content').scrollTop = 0;
 }
 modal.addEventListener('close', () => {
-  if (!modal.open) {
-    if (bottomNav.parentElement !== navHome) navHome.append(bottomNav);
-    if (route() === '/pindai') render(false);
-  }
+  if (!modal.open && route() === '/pindai') render(false);
 });
 modal.addEventListener('click', (e) => {
   if (e.target === modal) closeDialog();
@@ -786,7 +790,15 @@ document.addEventListener('submit', async (e) => {
   }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.body.classList.contains('menu-open')) menu();
+  if (document.body.classList.contains('menu-open')) {
+    if (e.key === 'Escape') menu();
+    if (e.key === 'Tab') {
+      const links = sidebar.querySelectorAll('a[href], button');
+      const first = links[0], last = links[links.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
   if (e.target.id === 'choose-photo' && ['Enter', ' '].includes(e.key)) {
     e.preventDefault();
     $('#scan-photo').click();
@@ -800,9 +812,6 @@ window.addEventListener('hashchange', () => {
 });
 window.addEventListener('pagehide', () => camera?.pause());
 window.addEventListener('pageshow', () => camera?.start());
-window.matchMedia('(max-width: 900px)').addEventListener('change', event => {
-  if (!event.matches) hideMenu();
-});
 window.addEventListener('online', () => refresh(true));
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) { refresh(true); camera?.start(); }
